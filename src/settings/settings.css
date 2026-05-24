@@ -1,0 +1,192 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-base: #080f1a;
+  --bg-surface: #0f1e30;
+  --bg-input: #0a1624;
+  --border: #1e3a5f;
+  --accent: #38bdf8;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-dim: #475569;
+  --green: #4ade80;
+  --green-dim: #052e16;
+  --green-border: #166534;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 14px;
+  min-height: 100vh;
+  padding: 40px 20px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.settings__loading { color: var(--text-secondary); padding: 40px; text-align: center; }
+
+.settings__header { margin-bottom: 32px; }
+
+.settings__title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.settings__logo-p { color: var(--accent); }
+
+.settings__form {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings__field { display: flex; flex-direction: column; gap: 6px; }
+
+.settings__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings__hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.settings__hint a { color: var(--accent); text-decoration: none; }
+.settings__hint a:hover { text-decoration: underline; }
+
+.settings__input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: monospace;
+  padding: 10px 12px;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.settings__input:focus { outline: none; border-color: var(--accent); }
+.settings__input::placeholder { color: var(--text-dim); }
+
+.settings__toggle { display: flex; flex-direction: column; gap: 8px; }
+
+.settings__toggle-track {
+  position: relative;
+  display: flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 0;
+}
+
+.settings__toggle-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: calc(50% - 4px);
+  background: var(--accent);
+  border-radius: 5px;
+  transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+}
+
+.settings__toggle[data-provider="chutes"] .settings__toggle-thumb {
+  transform: translateX(calc(100% + 0px));
+}
+
+.settings__toggle-option {
+  position: relative;
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  color: var(--text-dim);
+  transition: color 0.15s;
+  z-index: 1;
+}
+.settings__toggle-option:hover { color: var(--text-secondary); }
+.settings__toggle-option--active { color: #000; }
+
+.settings__toggle-caption {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-left: 2px;
+}
+
+.settings__save-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #000;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  align-self: flex-start;
+  transition: background 0.15s;
+}
+.settings__save-btn:hover:not(:disabled) { background: #7dd3fc; }
+.settings__save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.settings__about {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+
+.settings__about h2 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+}
+
+.settings__about p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.settings__about ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings__about li {
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding-left: 14px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.settings__about li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: 11px;
+}
