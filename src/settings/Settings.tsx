@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
+import { Icon, Logo } from '../sidebar/components/Icon'
+import { GEMINI_MODEL, MODEL } from '../shared/constants'
 
 type Provider = 'gemini' | 'chutes'
+
+const PROVIDER_INFO: Record<Provider, { name: string; caption: string }> = {
+  gemini: { name: 'Google Gemini', caption: `Using ${GEMINI_MODEL} — fast, with a free key from Google AI Studio.` },
+  chutes: { name: 'Chutes.ai', caption: `Using ${MODEL} via Chutes.ai — requires a Chutes API key.` },
+}
 
 export default function Settings() {
   const [provider, setProvider] = useState<Provider>('gemini')
   const [geminiKey, setGeminiKey] = useState('')
   const [chutesKey, setChutesKey] = useState('')
+  const [showKey, setShowKey] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -20,122 +28,117 @@ export default function Settings() {
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    chrome.storage.sync.set({
-      llm_provider: provider,
-      gemini_api_key: geminiKey.trim(),
-      chutes_api_key: chutesKey.trim(),
-    }, () => {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    })
+    chrome.storage.sync.set(
+      {
+        llm_provider: provider,
+        gemini_api_key: geminiKey.trim(),
+        chutes_api_key: chutesKey.trim(),
+      },
+      () => {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    )
   }
 
-  const activeKeyMissing = provider === 'gemini' ? !geminiKey.trim() : !chutesKey.trim()
+  const isGemini = provider === 'gemini'
+  const activeKeyMissing = isGemini ? !geminiKey.trim() : !chutesKey.trim()
 
-  if (loading) return <div className="settings__loading">Loading…</div>
+  if (loading) {
+    return (
+      <div className="set-loading">
+        <Icon name="loader" size={20} className="spin" />
+      </div>
+    )
+  }
 
   return (
-    <div className="settings">
-      <header className="settings__header">
-        <h1 className="settings__title">
-          <span className="settings__logo-p">P</span>INTAR Settings
-        </h1>
+    <div className="set">
+      <header className="set__header">
+        <Logo size={34} />
+        <div>
+          <h1 className="set__title">PINTAR</h1>
+          <p className="set__subtitle">Settings</p>
+        </div>
       </header>
 
-      <form className="settings__form" onSubmit={handleSave}>
+      <form className="set__card" onSubmit={handleSave}>
+        <div className="set__field">
+          <label className="set__label">AI provider</label>
+          <div className="set__seg" role="radiogroup" aria-label="AI provider">
+            {(['gemini', 'chutes'] as Provider[]).map(p => (
+              <button
+                key={p}
+                type="button"
+                role="radio"
+                aria-checked={provider === p}
+                className={`set__seg-opt ${provider === p ? 'set__seg-opt--active' : ''}`}
+                onClick={() => setProvider(p)}
+              >
+                {PROVIDER_INFO[p].name}
+              </button>
+            ))}
+          </div>
+          <p className="set__hint">{PROVIDER_INFO[provider].caption}</p>
+        </div>
 
-        {/* Provider selector */}
-        <div className="settings__field">
-          <label className="settings__label">AI Provider</label>
-          <div className="settings__toggle" data-provider={provider}>
-            <div className="settings__toggle-track">
-              <div className="settings__toggle-thumb" />
-              <button
-                type="button"
-                className={`settings__toggle-option ${provider === 'gemini' ? 'settings__toggle-option--active' : ''}`}
-                onClick={() => setProvider('gemini')}
-              >
-                Google Gemini
-              </button>
-              <button
-                type="button"
-                className={`settings__toggle-option ${provider === 'chutes' ? 'settings__toggle-option--active' : ''}`}
-                onClick={() => setProvider('chutes')}
-              >
-                Chutes.ai (Qwen3)
-              </button>
-            </div>
-            <p className="settings__toggle-caption">
-              {provider === 'gemini'
-                ? 'Using gemini-2.5-flash — fast and free with an API key from Google AI Studio'
-                : 'Using Qwen3-32B-TEE via Chutes.ai — requires a Chutes API key'}
-            </p>
+        <div className="set__field">
+          <label className="set__label" htmlFor="api-key">
+            {isGemini ? 'Gemini API key' : 'Chutes.ai API key'}
+          </label>
+          <p className="set__hint">
+            {isGemini ? (
+              <>Get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.</>
+            ) : (
+              <>Get a key from <a href="https://chutes.ai" target="_blank" rel="noreferrer">chutes.ai</a>.</>
+            )}
+          </p>
+          <div className="set__input-wrap">
+            <input
+              id="api-key"
+              key={provider}
+              className="set__input"
+              type={showKey ? 'text' : 'password'}
+              value={isGemini ? geminiKey : chutesKey}
+              onChange={e => (isGemini ? setGeminiKey(e.target.value) : setChutesKey(e.target.value))}
+              placeholder={isGemini ? 'AIza…' : 'cpk-…'}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              className="set__reveal"
+              onClick={() => setShowKey(s => !s)}
+              aria-label={showKey ? 'Hide API key' : 'Show API key'}
+            >
+              <Icon name={showKey ? 'x-circle' : 'search'} size={16} />
+            </button>
           </div>
         </div>
 
-        {/* Gemini key */}
-        {provider === 'gemini' && (
-          <div className="settings__field">
-            <label className="settings__label" htmlFor="gemini-key">
-              Gemini API Key
-            </label>
-            <p className="settings__hint">
-              Get your free key from{' '}
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
-                Google AI Studio
-              </a>.
-            </p>
-            <input
-              id="gemini-key"
-              className="settings__input"
-              type="password"
-              value={geminiKey}
-              onChange={e => setGeminiKey(e.target.value)}
-              placeholder="AIza…"
-              autoComplete="off"
-            />
-          </div>
-        )}
-
-        {/* Chutes key */}
-        {provider === 'chutes' && (
-          <div className="settings__field">
-            <label className="settings__label" htmlFor="chutes-key">
-              Chutes.ai API Key
-            </label>
-            <p className="settings__hint">
-              Get your key from{' '}
-              <a href="https://chutes.ai" target="_blank" rel="noreferrer">chutes.ai</a>.
-            </p>
-            <input
-              id="chutes-key"
-              className="settings__input"
-              type="password"
-              value={chutesKey}
-              onChange={e => setChutesKey(e.target.value)}
-              placeholder="chutes-sk-…"
-              autoComplete="off"
-            />
-          </div>
-        )}
-
-        <button className="settings__save-btn" type="submit" disabled={activeKeyMissing}>
-          {saved ? '✅ Saved!' : 'Save'}
+        <button className="set__save" type="submit" disabled={activeKeyMissing}>
+          {saved ? (
+            <><Icon name="check" size={16} strokeWidth={2.4} /> Saved</>
+          ) : (
+            'Save'
+          )}
         </button>
+        {activeKeyMissing && (
+          <p className="set__warn">
+            <Icon name="alert-triangle" size={13} />
+            Enter your {isGemini ? 'Gemini' : 'Chutes.ai'} key to enable PINTAR.
+          </p>
+        )}
       </form>
 
-      <div className="settings__about">
-        <h2>About PINTAR</h2>
-        <p>
-          <strong>PINTAR</strong> is an AI recruitment agent that screens resumes against a job
-          description, enriches candidate profiles, and produces ranked recommendations.
-        </p>
-        <ul>
-          <li>Upload PDF resumes and describe the role in chat</li>
-          <li>Agent screens, ranks, and deep-reviews candidates autonomously</li>
-          <li>Live annotations injected into LinkedIn / GitHub tabs</li>
-          <li>Final comparative report with hiring recommendation</li>
-        </ul>
+      <div className="set__card set__about">
+        <h2 className="set__about-title">How PINTAR works</h2>
+        <ol className="set__steps">
+          <li><span>1</span> Upload PDF résumés and describe the role in chat.</li>
+          <li><span>2</span> The agent screens, ranks, and deep-reviews candidates autonomously.</li>
+          <li><span>3</span> Finalists are cross-checked against their live LinkedIn / GitHub pages.</li>
+          <li><span>4</span> You get a ranked shortlist with a clear hire recommendation.</li>
+        </ol>
       </div>
     </div>
   )

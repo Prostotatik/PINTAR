@@ -1,17 +1,43 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { parsePdf } from '../hooks/usePdfParser'
+import { Icon } from './Icon'
 import type { ResumePayload } from '../../shared/tool-types'
 
 interface Props {
   onSend: (text: string, resumes?: ResumePayload[]) => void
   disabled: boolean
+  prefill?: string
+  prefillNonce?: number
 }
 
-export function ChatInput({ onSend, disabled }: Props) {
+export function ChatInput({ onSend, disabled, prefill, prefillNonce }: Props) {
   const [text, setText] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [parsing, setParsing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-grow the textarea with content.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`
+  }, [text])
+
+  // Apply quick-action prefills from the welcome screen.
+  useEffect(() => {
+    if (prefillNonce === undefined) return
+    setText(prefill ?? '')
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (el) {
+        el.focus()
+        el.setSelectionRange(el.value.length, el.value.length)
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillNonce])
 
   async function handleSend() {
     const trimmed = text.trim()
@@ -33,7 +59,8 @@ export function ChatInput({ onSend, disabled }: Props) {
       }
     }
 
-    const messageText = trimmed || (files.length > 0 ? `Here are ${files.length} resume${files.length > 1 ? 's' : ''} for you to analyze.` : '')
+    const messageText =
+      trimmed || (files.length > 0 ? `Here ${files.length > 1 ? 'are' : 'is'} ${files.length} résumé${files.length > 1 ? 's' : ''} to analyze.` : '')
     setText('')
     setFiles([])
     onSend(messageText, resumes)
@@ -58,55 +85,64 @@ export function ChatInput({ onSend, disabled }: Props) {
   const canSend = (text.trim().length > 0 || files.length > 0) && !disabled && !parsing
 
   return (
-    <div className="chat-input">
+    <div className="composer">
       {files.length > 0 && (
-        <div className="chat-input__files">
+        <div className="composer__files">
           {files.map(f => (
-            <div key={f.name} className="chat-input__file-chip">
-              <span>📄 {f.name}</span>
-              <button onClick={() => setFiles(prev => prev.filter(x => x.name !== f.name))}>×</button>
-            </div>
+            <span key={f.name} className="chip">
+              <Icon name="file-text" size={12} />
+              <span className="chip__name">{f.name}</span>
+              <button
+                className="chip__remove"
+                onClick={() => setFiles(prev => prev.filter(x => x.name !== f.name))}
+                aria-label={`Remove ${f.name}`}
+              >
+                <Icon name="x" size={12} strokeWidth={2.2} />
+              </button>
+            </span>
           ))}
         </div>
       )}
 
-      <div className="chat-input__row">
+      <div className="composer__row">
+        <button
+          className="composer__btn"
+          aria-label="Attach PDF résumés"
+          title="Attach PDF résumés"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled}
+        >
+          <Icon name="paperclip" size={18} />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          multiple
+          style={{ display: 'none' }}
+          onChange={e => handleFiles(e.target.files)}
+        />
+
         <textarea
-          className="chat-input__textarea"
+          ref={textareaRef}
+          className="composer__textarea"
           placeholder="Message PINTAR…"
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKey}
           disabled={disabled}
-          rows={2}
+          rows={1}
+          aria-label="Message PINTAR"
         />
 
-        <div className="chat-input__actions">
-          <button
-            className="chat-input__btn chat-input__btn--icon"
-            title="Attach PDF resumes"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled}
-          >
-            📎
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,application/pdf"
-            multiple
-            style={{ display: 'none' }}
-            onChange={e => handleFiles(e.target.files)}
-          />
-
-          <button
-            className={`chat-input__btn chat-input__btn--send ${canSend ? 'chat-input__btn--send-active' : ''}`}
-            onClick={handleSend}
-            disabled={!canSend}
-          >
-            {parsing ? '⏳' : '↑'}
-          </button>
-        </div>
+        <button
+          className={`composer__send ${canSend ? 'composer__send--active' : ''}`}
+          onClick={handleSend}
+          disabled={!canSend}
+          aria-label={parsing ? 'Parsing résumés' : 'Send message'}
+        >
+          {parsing ? <Icon name="loader" size={18} className="spin" /> : <Icon name="arrow-up" size={18} strokeWidth={2.2} />}
+        </button>
       </div>
     </div>
   )

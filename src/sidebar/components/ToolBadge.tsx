@@ -1,3 +1,5 @@
+import { Icon, type IconName } from './Icon'
+
 interface Props {
   tool: string
   status: 'calling' | 'done' | 'error'
@@ -5,26 +7,33 @@ interface Props {
   error?: string
 }
 
-const TOOL_LABELS: Record<string, string> = {
-  simplify_resume: 'Compress resume',
-  review_resume: 'Deep review',
-  fetch_candidate_page: 'Fetch profile page',
-  review_candidate_page: 'Analyze page',
-  detect_gaps_and_outcomes: 'Score candidate',
-  generate_summary: 'Generate final report',
+const TOOL_META: Record<string, { label: string; icon: IconName }> = {
+  fetch_requirements: { label: 'Reading job description', icon: 'briefcase' },
+  simplify_resume: { label: 'Compressing résumé', icon: 'file-text' },
+  review_resume: { label: 'Deep review', icon: 'file-search' },
+  fetch_candidate_page: { label: 'Fetching profile', icon: 'globe' },
+  review_candidate_page: { label: 'Cross-checking profile', icon: 'search' },
+  detect_gaps_and_outcomes: { label: 'Scoring candidate', icon: 'scale' },
+  generate_summary: { label: 'Writing final report', icon: 'trophy' },
 }
 
 export function ToolBadge({ tool, status, summary, error }: Props) {
-  const label = TOOL_LABELS[tool] ?? tool
-
-  const icon = status === 'calling' ? '⚙️' : status === 'done' ? '✅' : '❌'
-  const suffix = summary ? ` — ${summary}` : error ? `: ${error}` : ''
+  const meta = TOOL_META[tool] ?? { label: tool, icon: 'sparkles' as IconName }
+  const detail = status === 'error' ? error : summary
 
   return (
     <div className={`tool-badge tool-badge--${status}`}>
-      <span className="tool-badge__icon">{icon}</span>
-      <span className="tool-badge__name">{label}{suffix}</span>
-      {status === 'calling' && <span className="tool-badge__spinner" />}
+      <span className="tool-badge__icon">
+        {status === 'calling' ? (
+          <Icon name="loader" size={13} className="spin" />
+        ) : status === 'done' ? (
+          <Icon name="check" size={13} strokeWidth={2.4} />
+        ) : (
+          <Icon name="x" size={13} strokeWidth={2.4} />
+        )}
+      </span>
+      <span className="tool-badge__label">{meta.label}</span>
+      {detail && <span className="tool-badge__detail">{detail}</span>}
     </div>
   )
 }
