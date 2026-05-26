@@ -1,5 +1,5 @@
 export const CHUTES_API_URL = 'https://llm.chutes.ai/v1/chat/completions'
-export const MODEL = 'Qwen/Qwen3-32B-TEE'
+export const MODEL = 'google/gemma-4-31B-turbo-TEE'
 
 export const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 export const GEMINI_MODEL = 'gemini-3.1-flash-lite'

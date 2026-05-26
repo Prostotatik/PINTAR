@@ -5,13 +5,11 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'fetch_requirements',
-      description: 'Scrape the currently open browser tab and extract the job description from it. Use this when the user asks you to "read from the page", "grab the job description from here", or similar. Returns structured job requirements.',
+      description: 'Scrape the currently open browser tab and extract the job description from it. The active tab URL is captured automatically — no parameters needed. Use this when the user asks you to "read from the page", "grab the job description from here", or similar. Returns structured job requirements.',
       parameters: {
         type: 'object',
-        properties: {
-          url: { type: 'string', description: 'The URL of the current page (for reference only, the actual content is scraped from the active tab)' },
-        },
-        required: ['url'],
+        properties: {},
+        required: [],
       },
     },
   },
@@ -19,14 +17,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'simplify_resume',
-      description: 'Stage 1: Lightweight compression of a resume for fast keyword-based ranking. Call in parallel for ALL resumes. Returns extracted keywords, years of experience, job titles, links, and education.',
+      description: 'Stage 1: Lightweight compression of a batch of resumes (up to 10 per call) for fast keyword-based ranking. ONLY call this if total resumes exceed 10 — skip entirely for 10 or fewer resumes. After all parallel calls complete, rank results and SELECT TOP 10 IDs (not top 3). Returns an array of compressed profiles. Pass only resume IDs — the full text is retrieved automatically.',
       parameters: {
         type: 'object',
         properties: {
-          resume_id: { type: 'string', description: 'Resume identifier, e.g. R001' },
-          raw_text: { type: 'string', description: 'Full raw text of the resume' },
+          resume_ids: {
+            type: 'array',
+            description: 'Resume IDs to compress (max 10 per call), e.g. ["R001","R002","R003"]',
+            items: { type: 'string' },
+          },
         },
-        required: ['resume_id', 'raw_text'],
+        required: ['resume_ids'],
       },
     },
   },
@@ -34,14 +35,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'review_resume',
-      description: 'Stage 2: Deep resume ingestion for top candidates. Call in parallel for selected candidates. Returns full structured profile with skills, experience, projects, education, and links.',
+      description: 'Stage 2: Deep resume ingestion using the full original text of each candidate (up to 5 per call). Call for the top 10 selected by simplify_resume (or all resumes if N ≤ 10). For 10 candidates call twice in parallel (5+5). After all calls complete, perform deep semantic scoring against JD and SELECT TOP 3. Returns an array of full structured profiles. Pass only resume IDs — the full text is retrieved automatically.',
       parameters: {
         type: 'object',
         properties: {
-          resume_id: { type: 'string', description: 'Resume identifier' },
-          raw_text: { type: 'string', description: 'Full raw text of the resume' },
+          resume_ids: {
+            type: 'array',
+            description: 'Resume IDs to deeply review (max 5 per call), e.g. ["R001","R002"]',
+            items: { type: 'string' },
+          },
         },
-        required: ['resume_id', 'raw_text'],
+        required: ['resume_ids'],
       },
     },
   },
@@ -49,7 +53,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'fetch_candidate_page',
-      description: 'Stage 3: Scrape a candidate\'s public profile page (LinkedIn, GitHub, portfolio). Opens the URL in a Chrome tab and extracts the DOM text. Call sequentially for each top-3 candidate.',
+      description: 'Stage 3: Scrape a candidate\'s LinkedIn profile page. Call ONLY when a LinkedIn URL is available — do NOT call for GitHub, portfolio, or any other URL. If no LinkedIn URL exists for the candidate, skip this tool entirely. Call sequentially, one candidate at a time.',
       parameters: {
         type: 'object',
         properties: {

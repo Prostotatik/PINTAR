@@ -15,20 +15,62 @@ export interface StreamState {
   connected: boolean
 }
 
+const INITIAL_STATE: Omit<StreamState, 'connected'> = {
+  currentTurnEvents: [],
+  chatMessages: [],
+  stage: 'idle',
+  stageLabel: '',
+  candidates: [],
+  finalReport: null,
+  isRunning: false,
+  error: null,
+}
+
+const CHAT_UI_KEY = 'pintar_chat_ui'
+
+// Strip full resume text before saving — texts live in pintar_resume_store
+function serializeMessages(messages: ChatMessage[]): string {
+  const stripped = messages.map(msg => ({
+    ...msg,
+    resumes: msg.resumes?.map(r => ({ id: r.id, filename: r.filename, text: '' })),
+  }))
+  return JSON.stringify(stripped)
+}
+
+async function loadSavedMessages(): Promise<ChatMessage[]> {
+  try {
+    const result = await chrome.storage.local.get(CHAT_UI_KEY)
+    const saved = result[CHAT_UI_KEY]
+    if (typeof saved === 'string') {
+      const parsed = JSON.parse(saved) as ChatMessage[]
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch { /* ignore */ }
+  return []
+}
+
 export function useAgentStream() {
   const portRef = useRef<chrome.runtime.Port | null>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [state, setState] = useState<StreamState>({
-    currentTurnEvents: [],
-    chatMessages: [],
-    stage: 'idle',
-    stageLabel: '',
-    candidates: [],
-    finalReport: null,
-    isRunning: false,
-    error: null,
+    ...INITIAL_STATE,
     connected: false,
   })
+
+  // Restore chat UI from storage on mount
+  useEffect(() => {
+    loadSavedMessages().then(messages => {
+      if (messages.length > 0) {
+        setState(prev => ({ ...prev, chatMessages: messages }))
+      }
+    })
+  }, [])
+
+  // Persist chat messages to storage whenever they change
+  useEffect(() => {
+    if (state.chatMessages.length === 0) return
+    chrome.storage.local.set({ [CHAT_UI_KEY]: serializeMessages(state.chatMessages) }).catch(() => {})
+  }, [state.chatMessages])
 
   const connect = useCallback(() => {
     if (reconnectTimerRef.current) {
@@ -49,13 +91,11 @@ export function useAgentStream() {
         setState(prev => ({
           ...prev,
           connected: false,
-          // If agent was running when SW died, surface an error
           ...(prev.isRunning ? {
             isRunning: false,
             error: 'Connection to extension service worker was lost. Please resend your message.',
           } : {}),
         }))
-        // Reconnect after a short delay
         reconnectTimerRef.current = setTimeout(connect, 800)
       })
 
@@ -73,6 +113,15 @@ export function useAgentStream() {
       portRef.current?.disconnect()
     }
   }, [connect])
+
+  // Keepalive: while agent is running, ping the SW every 20s to prevent it from being terminated
+  useEffect(() => {
+    if (!state.isRunning) return
+    const id = setInterval(() => {
+      try { portRef.current?.postMessage({ type: 'KEEPALIVE' } satisfies SidebarCommand) } catch { /* ignore */ }
+    }, 20_000)
+    return () => clearInterval(id)
+  }, [state.isRunning])
 
   function sendMessage(text: string, resumes?: ResumePayload[]) {
     const port = portRef.current
@@ -112,7 +161,16 @@ export function useAgentStream() {
     setState(prev => ({ ...prev, isRunning: false }))
   }
 
-  return { state, sendMessage, abort }
+  function reset() {
+    try { portRef.current?.postMessage({ type: 'RESET' } satisfies SidebarCommand) } catch { /* ignore */ }
+    chrome.storage.local.remove(CHAT_UI_KEY).catch(() => {})
+    setState({
+      ...INITIAL_STATE,
+      connected: state.connected,
+    })
+  }
+
+  return { state, sendMessage, abort, reset }
 }
 
 function handleEvent(prev: StreamState, event: AgentEvent): StreamState {
@@ -132,8 +190,13 @@ function handleEvent(prev: StreamState, event: AgentEvent): StreamState {
     case 'AGENT_DONE': {
       const turnText = extractTurnText(prev.currentTurnEvents)
       const next: StreamState = { ...prev, isRunning: false, currentTurnEvents: [] }
-      if (turnText) {
-        const msg: ChatMessage = { role: 'assistant', text: turnText, timestamp: Date.now() }
+      if (turnText || prev.currentTurnEvents.some(e => e.type === 'TOOL_CALLING' || e.type === 'TOOL_COMPLETE')) {
+        const msg: ChatMessage = {
+          role: 'assistant',
+          text: turnText,
+          events: prev.currentTurnEvents,
+          timestamp: Date.now(),
+        }
         next.chatMessages = [...prev.chatMessages, msg]
       }
       return next

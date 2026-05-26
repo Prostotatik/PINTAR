@@ -17,11 +17,14 @@ export type AgentEvent =
 export type SidebarCommand =
   | { type: 'USER_MESSAGE'; text: string; resumes?: ResumePayload[] }
   | { type: 'ABORT' }
+  | { type: 'KEEPALIVE' }
+  | { type: 'RESET' }
 
 // Chat message for display in sidebar
 export interface ChatMessage {
   role: 'user' | 'assistant'
   text: string
   resumes?: ResumePayload[]
+  events?: AgentEvent[]
   timestamp: number
 }

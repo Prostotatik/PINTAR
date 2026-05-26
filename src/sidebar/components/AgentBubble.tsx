@@ -6,6 +6,7 @@ import type { AgentEvent } from '../../shared/message-types'
 interface Props {
   events: AgentEvent[]
   isRunning: boolean
+  text?: string
 }
 
 interface ToolState {
@@ -15,14 +16,14 @@ interface ToolState {
   error?: string
 }
 
-export function AgentBubble({ events, isRunning }: Props) {
+export function AgentBubble({ events, isRunning, text }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [events])
 
-  if (events.length === 0 && !isRunning) return null
+  if (events.length === 0 && !isRunning && !text) return null
 
   // Merge consecutive THINK_TOKEN events into blocks, same for AGENT_TEXT
   const rendered: Array<{ kind: 'think' | 'text' | 'tool'; content: string; toolState?: ToolState }> = []
@@ -106,6 +107,9 @@ export function AgentBubble({ events, isRunning }: Props) {
           }
           return null
         })}
+        {rendered.length === 0 && text && (
+          <p className="agent-bubble__text" style={{ whiteSpace: 'pre-wrap' }}>{text}</p>
+        )}
         {isRunning && <span className="agent-bubble__cursor" />}
         <div ref={bottomRef} />
       </div>

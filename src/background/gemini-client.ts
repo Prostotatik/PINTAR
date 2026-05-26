@@ -97,6 +97,11 @@ function convertMessages(messages: unknown[]): { systemInstruction: string | nul
       try { responseContent = JSON.parse(msg.content as string) }
       catch { responseContent = { result: msg.content as string } }
 
+      // Gemini requires functionResponse.response to be an object, never an array
+      if (Array.isArray(responseContent)) {
+        responseContent = { results: responseContent }
+      }
+
       const part: GeminiPart = { functionResponse: { id: toolCallId, name: toolName, response: responseContent } }
 
       // Batch consecutive tool results into one user message

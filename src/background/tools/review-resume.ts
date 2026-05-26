@@ -1,10 +1,11 @@
 import { chatCompletion } from '../llm-client'
 import type { ReviewedResume } from '../../shared/tool-types'
 
-const SYSTEM_PROMPT = `You are an expert resume analyst. Extract a comprehensive structured profile from the resume.
-Return ONLY valid JSON matching this exact structure:
+const SYSTEM_PROMPT = `You are an expert resume analyst. You will receive multiple resumes separated by dividers.
+Extract a comprehensive structured profile from EACH resume.
+Return ONLY a valid JSON array — one object per resume — matching this structure per element:
 {
-  "id": "resume_id provided",
+  "id": "the resume_id shown in the divider header",
   "name": "Full candidate name",
   "full_profile": {
     "skills": ["technical and soft skills"],
@@ -20,20 +21,22 @@ Return ONLY valid JSON matching this exact structure:
     "certifications": ["certification names"]
   }
 }
-Be thorough. Extract all technical skills, quantified achievements, and actual URLs.`
+Return a JSON array with exactly one entry per resume. Be thorough. Extract all technical skills, quantified achievements, and actual URLs.`
 
-export async function reviewResume(resumeId: string, rawText: string): Promise<ReviewedResume> {
-  const content = await chatCompletion(
-    SYSTEM_PROMPT,
-    `resume_id: ${resumeId}\n\n${rawText}`,
-    0.2,
-    2048
-  )
+export async function reviewResumeBatch(
+  resumes: Array<{ resume_id: string; raw_text: string }>
+): Promise<ReviewedResume[]> {
+  const userContent = resumes
+    .map(r => `=== RESUME ${r.resume_id} ===\n${r.raw_text}`)
+    .join('\n\n')
 
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error(`review_resume: no JSON in response for ${resumeId}`)
+  const content = await chatCompletion(SYSTEM_PROMPT, userContent, 0.2, 16384)
 
-  const parsed = JSON.parse(jsonMatch[0]) as ReviewedResume
-  parsed.id = resumeId
+  const start = content.indexOf('[')
+  const end = content.lastIndexOf(']')
+  if (start === -1 || end === -1) throw new Error('review_resume batch: no JSON array in response')
+
+  const parsed = JSON.parse(content.slice(start, end + 1)) as ReviewedResume[]
+  parsed.forEach((p, i) => { if (resumes[i]) p.id = resumes[i].resume_id })
   return parsed
 }

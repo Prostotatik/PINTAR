@@ -125,6 +125,24 @@ body {
 }
 .app__settings-btn:hover { opacity: 1; }
 
+.app__new-chat-btn {
+  background: none;
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.app__new-chat-btn:hover {
+  background: #38bdf8;
+  color: #080f1a;
+}
+
 .app__abort-btn {
   background: var(--red-dim);
   border: 1px solid var(--red-border);

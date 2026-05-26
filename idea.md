@@ -1,5 +1,5 @@
-ОЧЕНЬ ВАЖНО!!!
-Требования Хакатона:
+VERY IMPORTANT!!!
+Hackathon Requirements:
 The Intelligent
 Recruiter
 Challenge: Traditional job
@@ -13,14 +13,14 @@ and a pool of candidate data
 (resumes/profiles) and
 identifies the best matches.
 
-ОЧЕНЬ ВАЖНО!!!
-Решение:
+VERY IMPORTANT!!!
+Solution:
 PINTAR — Precise Intelligence for Talent Acquisition & Recruitment
-AI Agent расширение для браузера c использовангием Chutes.ai и модели Qwen3 32B TEE
+AI Agent browser extension using Chutes.ai and the Qwen3 32B TEE model
 
-ОЧЕНЬ ВАЖНО!!!
-Главное:
-Это именно что Agent, то есть ему будут предоставляться tools и он должен их вызывать в зависимости от надобности. Твоя задача сделать это по факту и визуально как agent, это значит что пока продолжается agent_loop, то его speech bubble не должен прерываться и должны появляться thinking процесс где показано какие tools он вызывает
+VERY IMPORTANT!!!
+Key requirement:
+This is specifically an Agent — it will be provided with tools and must call them as needed. Your task is to implement this both functionally and visually as an agent: while the agent_loop is running, its speech bubble must not be interrupted, and a thinking process must appear showing which tools it is calling
 
 
 Tools Definition
@@ -256,10 +256,10 @@ IF user pastes/types JD manually:
   SKIP fetch_requirements entirely
   → pipeline starts immediately
 
-Полный список tools (финальный)
+Full list of tools (final)
 ToolStageParallel?fetch_requirementsPre-stage—simplify_resume1✅ yesreview_resume2✅ yesfetch_candidate_page3❌ sequentialreview_candidate_page3❌ sequentialdetect_gaps_and_outcomes3❌ sequentialgenerate_summary4—
 
-Системный промпт
+System Prompt
 You are PINTAR, an intelligent recruitment agent embedded in a Chrome extension sidebar.
 Your job is to analyze resumes and a job description, identify the best candidates,
 and provide structured hiring recommendations.

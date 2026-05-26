@@ -13,7 +13,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
   console.log('[PINTAR SW] sidebar connected')
   sidebarPort = port
-  resetConversation()
 
   port.onDisconnect.addListener(() => {
     console.log('[PINTAR SW] sidebar disconnected')
@@ -22,6 +21,14 @@ chrome.runtime.onConnect.addListener((port) => {
 
   port.onMessage.addListener((msg: SidebarCommand) => {
     console.log('[PINTAR SW] received command:', msg.type)
+
+    if (msg.type === 'KEEPALIVE') return
+
+    if (msg.type === 'RESET') {
+      resetConversation()
+      pushEvent({ type: 'AGENT_DONE' })
+      return
+    }
 
     if (msg.type === 'USER_MESSAGE') {
       // Immediate ACK so the sidebar knows the SW is alive

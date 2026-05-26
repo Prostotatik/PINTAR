@@ -26,8 +26,15 @@ function detectPlatform(url: string): FetchedPage['platform'] {
   return 'other'
 }
 
+function normalizeUrl(url: string): string {
+  const trimmed = url.trim()
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 export async function fetchCandidatePage(candidateId: string, url: string): Promise<FetchedPage> {
-  const tab = await chrome.tabs.create({ url, active: true })
+  const normalizedUrl = normalizeUrl(url)
+  const tab = await chrome.tabs.create({ url: normalizedUrl, active: true })
   const tabId = tab.id!
 
   try {
@@ -53,8 +60,8 @@ export async function fetchCandidatePage(candidateId: string, url: string): Prom
     await chrome.storage.session.set({ [`candidateTab_${candidateId}`]: tabId })
 
     return {
-      url,
-      platform: detectPlatform(url),
+      url: normalizedUrl,
+      platform: detectPlatform(normalizedUrl),
       raw_content: rawContent,
       sections,
     }

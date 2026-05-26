@@ -18,7 +18,7 @@ const STAGE_LABELS: Record<string, string> = {
 }
 
 export default function App() {
-  const { state, sendMessage, abort } = useAgentStream()
+  const { state, sendMessage, abort, reset } = useAgentStream()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -50,6 +50,18 @@ export default function App() {
               </span>
               <button className="app__abort-btn" onClick={abort}>Stop</button>
             </>
+          )}
+          {state.chatMessages.length > 0 && !state.isRunning && (
+            <button
+              className="app__new-chat-btn"
+              onClick={() => {
+                if (window.confirm('Start a new chat? This will clear the current conversation and all uploaded resumes.')) {
+                  reset()
+                }
+              }}
+            >
+              New
+            </button>
           )}
           <button
             className="app__settings-btn"
@@ -144,15 +156,8 @@ function ChatBubble({ message }: { message: ChatMessage }) {
     )
   }
 
-  // Assistant completed message — only show if has text
-  if (!message.text) return null
+  // Assistant completed message
+  if (!message.text && (!message.events || message.events.length === 0)) return null
 
-  return (
-    <div className="chat-bubble chat-bubble--assistant">
-      <div className="chat-bubble__avatar">P</div>
-      <div className="chat-bubble__content">
-        <p style={{ whiteSpace: 'pre-wrap' }}>{message.text}</p>
-      </div>
-    </div>
-  )
+  return <AgentBubble events={message.events ?? []} isRunning={false} text={message.text} />
 }

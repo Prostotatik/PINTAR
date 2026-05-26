@@ -25,9 +25,10 @@ Return ONLY valid JSON matching this exact structure:
 }
 Be precise. Extract only what is explicitly stated.`
 
-export async function fetchRequirements(url: string): Promise<JobRequirements> {
+export async function fetchRequirements(): Promise<JobRequirements> {
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
   if (!activeTab?.id) throw new Error('No active tab found')
+  const url = activeTab.url ?? 'unknown'
 
   const targetTabId = activeTab.id
 
