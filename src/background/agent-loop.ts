@@ -458,7 +458,14 @@ async function injectAnnotations(
       func: (data: unknown) => {
         (globalThis as unknown as Record<string, unknown>).__pintarAnnotationData = data
       },
-      args: [{ strengths: gapAnalysis.strengths, gaps: gapAnalysis.gaps }],
+      args: [
+        {
+          strengths: gapAnalysis.strengths,
+          gaps: gapAnalysis.gaps,
+          score: gapAnalysis.score,
+          hire_recommendation: gapAnalysis.hire_recommendation,
+        },
+      ],
     })
 
     // Step 2: inject the annotator content script that reads the data and builds the DOM
